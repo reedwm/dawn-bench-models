@@ -32,7 +32,7 @@ from tensorflow.python.training import moving_averages
 HParams = namedtuple('HParams',
                      'batch_size, num_classes, min_lrn_rate, lrn_rate, '
                      'num_residual_units, use_bottleneck, weight_decay_rate, '
-                     'relu_leakiness, optimizer, data_format')
+                     'optimizer, data_format')
 
 
 class ResNet(object):
@@ -115,7 +115,7 @@ class ResNet(object):
 
     with tf.variable_scope('unit_last'):
       x = self._batch_norm('final_bn', x)
-      x = self._relu(x, self.hps.relu_leakiness)
+      x = tf.nn.relu(x)
       x = self._global_avg_pool(x)
 
     with tf.variable_scope('logit'):
@@ -170,20 +170,20 @@ class ResNet(object):
     if activate_before_residual:
       with tf.variable_scope('shared_activation'):
         x = self._batch_norm('init_bn', x)
-        x = self._relu(x, self.hps.relu_leakiness)
+        x = tf.nn.relu(x)
         orig_x = x
     else:
       with tf.variable_scope('residual_only_activation'):
         orig_x = x
         x = self._batch_norm('init_bn', x)
-        x = self._relu(x, self.hps.relu_leakiness)
+        x = tf.nn.relu(x)
 
     with tf.variable_scope('sub1'):
       x = self._conv('conv1', x, 3, in_filter, out_filter, stride)
 
     with tf.variable_scope('sub2'):
       x = self._batch_norm('bn2', x)
-      x = self._relu(x, self.hps.relu_leakiness)
+      x = tf.nn.relu(x)
       x = self._conv('conv2', x, 3, out_filter, out_filter, [1, 1, 1, 1])
 
     with tf.variable_scope('sub_add'):
@@ -209,25 +209,25 @@ class ResNet(object):
     if activate_before_residual:
       with tf.variable_scope('common_bn_relu'):
         x = self._batch_norm('init_bn', x)
-        x = self._relu(x, self.hps.relu_leakiness)
+        x = tf.nn.relu(x)
         orig_x = x
     else:
       with tf.variable_scope('residual_bn_relu'):
         orig_x = x
         x = self._batch_norm('init_bn', x)
-        x = self._relu(x, self.hps.relu_leakiness)
+        x = tf.nn.relu(x)
 
     with tf.variable_scope('sub1'):
       x = self._conv('conv1', x, 1, in_filter, out_filter/4, stride)
 
     with tf.variable_scope('sub2'):
       x = self._batch_norm('bn2', x)
-      x = self._relu(x, self.hps.relu_leakiness)
+      x = tf.nn.relu(x)
       x = self._conv('conv2', x, 3, out_filter/4, out_filter/4, [1, 1, 1, 1])
 
     with tf.variable_scope('sub3'):
       x = self._batch_norm('bn3', x)
-      x = self._relu(x, self.hps.relu_leakiness)
+      x = tf.nn.relu(x)
       x = self._conv('conv3', x, 1, out_filter/4, out_filter, [1, 1, 1, 1])
 
     with tf.variable_scope('sub_add'):
@@ -258,10 +258,6 @@ class ResNet(object):
               stddev=np.sqrt(2.0/n)))
       return tf.nn.conv2d(x, kernel, strides, padding='SAME',
                           data_format=self.hps.data_format)
-
-  def _relu(self, x, leakiness=0.0):
-    """Relu, with optional leaky support."""
-    return tf.where(tf.less(x, 0.0), leakiness * x, x, name='leaky_relu')
 
   def _fully_connected(self, x, out_dim):
     """FullyConnected layer for final output."""

@@ -140,7 +140,7 @@ def train(hps):
     def after_run(self, run_context, run_values):
       train_step = run_values.results
       epoch = train_step / num_steps_per_epoch
-      if train_step % num_steps_per_epoch == 0:
+      if train_step % (5 * num_steps_per_epoch) == 0:
         end_time = time.time()
         directory = os.path.join(FLAGS.checkpoint_dir, ("%5d" % epoch).replace(' ', '0'))
         subprocess.call("mkdir -p %s" % directory, shell=True)
@@ -286,7 +286,6 @@ def main(_):
                              num_residual_units=num_residual_units,
                              use_bottleneck=FLAGS.use_bottleneck,
                              weight_decay_rate=0.0005,
-                             relu_leakiness=0.1,
                              optimizer='mom',
                              data_format=data_format)
 
